@@ -13,6 +13,19 @@ config_path_file = config_path + "pyconv.cfg"
 config = configparser.ConfigParser(converters={'list': lambda x: [i.strip() for i in x.split(',')]})
 output_too_big = False
 
+# Function: ct(string, rgbSpc[], rgbStr[]) returns string
+# Color terminal rgb output
+def ct(string, rgbStr=[0,0,0], rgbSpc=[0,0,0]):
+    global colorEnabled
+    #Change spacer char here
+    spacerChar = ["[","]"]
+    if (not colorEnabled):
+        return spacerChar[0] + string + spacerchar[1]
+    #implements colors
+    coloredSpcrOp = "\x1b[38;2;{};{};{}m{}\x1b[0m".format(rgbSpc[0],rgbSpc[1],rgbSpc[2],spacerChar[0])
+    coloredSpcrCl = "\x1b[38;2;{};{};{}m{}\x1b[0m".format(rgbSpc[0],rgbSpc[1],rgbSpc[2],spacerChar[1])
+    coloredStr = "\x1b[38;2;{};{};{}m{}\x1b[0m".format(rgbStr[0],rgbStr[1],rgbStr[2],string)
+    return coloredSpcrOp + coloredStr + coloredSpcrCl
 # Function: print_verbose()
 # Shows extra stuff
 def print_verbose(in_string):
@@ -22,50 +35,69 @@ def print_verbose(in_string):
 # Function: loadcfg()
 # Loads the config from config_path_file
 def loadcfg():
-    global config_path_file, lossyImagesArray, losslessImagesArray, animatedImagesArray, showAsReduction, quality_floor,quality_mod, quality_steps, desired_size_reduction, verboseEnabled
+    global config_path_file, lossyImagesArray, losslessImagesArray, animatedImagesArray, showAsReduction, quality_floor,quality_mod, quality_steps, desired_size_reduction, verboseEnabled, outputDir, crunchTypes, colorEnabled
     config.read(config_path_file)
-    lossyImagesArray = config.getlist("DEFAULT","Lossy Types")
+    # Put in everything into variables
+    verboseEnabled = config.getboolean("DEFAULT", "Verbose")
+    colorEnabled = config.getboolean("DEFAULT", "Color")
     losslessImagesArray = config.getlist("DEFAULT","Lossless Types")
+    lossyImagesArray = config.getlist("DEFAULT","Lossy Types")
     animatedImagesArray = config.getlist("DEFAULT","Animated Types")
     showAsReduction = config.getboolean("DEFAULT", "Show as size reduction")
-    verboseEnabled = config.getboolean("DEFAULT", "Verbose")
+    outputDir = config["DEFAULT"]["Output Location"]
+    crunchTypes = config.getlist("DEFAULT", "crunch down types")
+
+    desired_size_reduction = config.getint("Lossy Options","Desired Reduction")
     quality_mod = config.getint("Lossy Options","Quality Start")
     quality_steps = config.getint("Lossy Options","Quality Steps")
     quality_floor = config.getint("Lossy Options","Quality Floor")
-    desired_size_reduction = config.getint("Lossy Options","Desired Reduction")
-    # Add period to start of every value
+    # Add period to start of every file type value
     lossyImagesArray = ["." + i for i in lossyImagesArray]
     losslessImagesArray = ["." + i for i in losslessImagesArray]
     animatedImagesArray = ["." + i for i in animatedImagesArray]
 
 # Check hash and Generate Name
 def name_gen(file_type):
-    global final_name, output_too_big
+    global final_name, output_too_big, outputDir
     # Check hash
     with open(argv[1], "rb") as active_file:
         file_hash = hash_method()
         while chunk := active_file.read(8192):
             file_hash.update(chunk)
-    #print(file_hash.hexdigest())
-    final_name = "BG-" + file_hash.hexdigest()[4:10].upper() + "-" + file_hash.hexdigest()[13:15].upper() + file_type + ".webp"
+    print_verbose(file_hash.hexdigest())
+    # Mold the final name
+    final_name = outputDir + "BG-" + file_hash.hexdigest()[4:10].upper() + "-" + file_hash.hexdigest()[13:15].upper() + file_type + ".webp"
+    final_name = os.path.expanduser(final_name)
     if(os.path.exists(final_name) and not output_too_big):
-        print("Skipping: File already converted.")
+        print("Skipping: File already converted: " + final_name)
         exit(0)
     output_too_big = False
 
 # Run the convert commands as needed
-def run_converter(convert_type):
-    global final_name, quality_mod, showAsReduction, quality_floor, quality_mod, quality_steps, desired_size_reduction, output_too_big, displayOneLine
+def run_converter(convert_type, crunchActive=False):
+    global final_name, quality_mod, showAsReduction, quality_floor, quality_mod, quality_steps, desired_size_reduction, output_too_big, displayOneLine, crunchTypes
     filesize_format = []
-    if(convert_type == "lossy"):
-        name_gen("LY")
-        cmd = "cwebp -quiet -m 6 -mt -q " + str(quality_mod) + " " + argv[1] + " -o " + final_name
-    if(convert_type == "lossless"):
-        name_gen("LL")
-        cmd = "cwebp -quiet -z 9 -mt " + argv[1] + " -o " + final_name
-    if(convert_type == "animated"):
-        name_gen("AN")
-        cmd = "gif2webp -quiet -mt -m 6 -q 100 " + argv[1] + " -o " + final_name
+    if(not crunchActive):
+        if(convert_type == "lossy"):
+            name_gen("LY")
+            cmd = "cwebp -quiet -m 6 -mt -q " + str(quality_mod) + " " + argv[1] + " -o " + final_name
+        if(convert_type == "lossless"):
+            name_gen("LL")
+            cmd = "cwebp -quiet -z 9 -mt " + argv[1] + " -o " + final_name
+        if(convert_type == "animated"):
+            name_gen("AN")
+            cmd = "gif2webp -quiet -mt -m 6 -q 100 " + argv[1] + " -o " + final_name
+    else:
+        if(convert_type == "lossy"):
+            name_gen("LY")
+            cmd = "cwebp -quiet -m 6 -mt -q " + str(quality_mod) + " " + argv[1] + " -o " + final_name
+        if(convert_type == "lossless"):
+            name_gen("LL")
+            cmd = "cwebp -quiet -m 6 -mt -q " + str(quality_mod + quality_steps) + " " + argv[1] + " -o " + final_name
+        if(convert_type == "animated"):
+            name_gen("AN")
+            cmd = "gif2webp -quiet -mt -lossy -m 6 -q " + str(quality_mod + quality_steps) + " " + argv[1] + " -o " + final_name
+
     os.system(cmd)
     # Get file sizes of used files
     filesize_input = os.path.getsize(argv[1])
@@ -79,18 +111,18 @@ def run_converter(convert_type):
     filesize_output = filesize_format[showAsReduction]
     shell_details = ""
     # Construct the shell output here
-    shell_details += "[" + convert_type + "]"
-    if (convert_type == "lossy"):
-        shell_details += "[Q" + str(quality_mod) + "]"
-    shell_details += "[" + argv[1] + " -> " + final_name + "]"
-    shell_details += "[" + filesize_output + "]"
+    shell_details += ct(convert_type, [0,191,255],[0,255,0])
+    if (convert_type == "lossy" or crunchActive):
+        shell_details += ct(("Q" + str(quality_mod)), [0,191,255],[0,255,0])
+    shell_details += ct((argv[1] + " -> " + final_name), [250,235,215],[0,255,0])
+    shell_details += ct(filesize_output, [245,245,245],[0,255,0])
     # See if the conversion produced the requested file reduction
-    if(int(100 * filesize_reduction) < desired_size_reduction and quality_mod > quality_floor):
+    if(int(100 * filesize_reduction) < desired_size_reduction and quality_mod > quality_floor and convert_type in crunchTypes):
         shell_details += "!!! Not reduced by at least " + str(desired_size_reduction) + "%. Q " + str(quality_mod) + "->" + str(quality_mod - quality_steps)
         print_verbose(shell_details)
         quality_mod -= quality_steps
         output_too_big = True
-        run_converter("lossy")
+        run_converter(convert_type, True)
     print(shell_details)
     exit(0)
 
@@ -109,13 +141,16 @@ else:
     create_path(config_path).mkdir(exist_ok=True)
     config["DEFAULT"] = {}
     config["DEFAULT"]["Verbose"] = "false"
+    config["DEFAULT"]["Color"] = "true"
     config["DEFAULT"]["Lossless Types"] = "png"
     config["DEFAULT"]["Lossy Types"] = "jpeg, jpg, jfif"
     config["DEFAULT"]["Animated Types"] = "gif"
     config["DEFAULT"]["Show as size reduction"] = "true"
+    config["DEFAULT"]["Output Location"] = "./"
+    config["DEFAULT"]["Crunch down types"] = "lossy, lossless, animated"
     config["Lossy Options"] = {}
-    config["Lossy Options"]["Desired Reduction"] = "30"
-    config["Lossy Options"]["Quality Start"] = "85"
+    config["Lossy Options"]["Desired Reduction"] = "40"
+    config["Lossy Options"]["Quality Start"] = "100"
     config["Lossy Options"]["Quality Steps"] = "5"
     config["Lossy Options"]["Quality Floor"] = "60"
     # Create pyconv.cfg
