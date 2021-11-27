@@ -2,6 +2,7 @@
 # Convert GIF or PNG with max compression
 
 import os, random, configparser
+from hashlib import blake2b as hash_method
 from pathlib import Path as create_path
 from sys import argv
 
@@ -24,13 +25,18 @@ def loadcfg():
     losslessImagesArray = ["." + i for i in losslessImagesArray]
     animatedImagesArray = ["." + i for i in animatedImagesArray]
 
-# Generate Name
+# Check hash and Generate Name
 def name_gen(file_type):
-    random.seed()
-    final_name_pt1 = "BG"
-    final_name_pt2 = random.randint(5,50) + random.randint(2000, 4000) + random.randint(10000, 50000)
-    final_name_pt3 = random.randint(10,99) 
-    final_name = final_name_pt1 + "-" + str(final_name_pt2) + "-" + str(final_name_pt3) + file_type + ".webp"
+    # Check hash
+    with open(argv[1], "rb") as active_file:
+        file_hash = hash_method()
+        while chunk := active_file.read(8192):
+            file_hash.update(chunk)
+    #print(file_hash.hexdigest())
+    final_name = "BG-" + file_hash.hexdigest()[4:10].upper() + "-" + file_hash.hexdigest()[13:15].upper() + file_type + ".webp"
+    if(os.path.exists(final_name)):
+        print("Skipping: File already converted.")
+        exit(0)
     return final_name
 
 #print('num of arguments:', len(argv), '. Args:', str(argv))
@@ -66,16 +72,15 @@ if (len(argv) == 2):
        inputFileType = file_tup[1].lower()
        # Lossless
        if inputFileType in losslessImagesArray:
-           cmd = "cwebp -z 9 -mt " + argv[1] + " -o " + name_gen("S")
+           cmd = "cwebp -z 9 -mt " + argv[1] + " -o " + name_gen("LL")
            os.system(cmd)
        # Lossy
        elif inputFileType in lossyImagesArray:
-           cmd = "cwebp -m 6 -mt -q 85 " + argv[1] + " -o " + name_gen("L")
+           cmd = "cwebp -m 6 -mt -q 80 " + argv[1] + " -o " + name_gen("LY")
            os.system(cmd)
-
        # Animated
        elif inputFileType in animatedImagesArray:
-           cmd = "gif2webp -mt -m 6 -q 100 " + argv[1] + " -o " + name_gen("A")
+           cmd = "gif2webp -mt -m 6 -q 100 " + argv[1] + " -o " + name_gen("AN")
            os.system(cmd)
        else:
            print("Err: Provided file does not have a valid file type.")
