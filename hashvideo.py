@@ -9,8 +9,9 @@ import os, shutil, argparse
 
 #########################################
 software_version = "Version 1.0.2 © 2021 haosoft"
-# verify file existance
+#########################################
 
+# verify file existance
 def check_file(file):
     # does it exist?
     if(not os.path.exists(file)):
@@ -44,8 +45,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("File", metavar="INPUT_FILE", type=str, help="Input file")
     parser.add_argument("-v", "--version", action="version")
-    # parser.add_argument("-a", action="store_true")
-    # parser.add_argument("-b", action="store_true")
     parser.add_argument("-o", "--output", metavar="OUTPUT_DIRECTORY", action="store", type=str, help="Optionally define an output directory")
     parser.version = software_version
     
