@@ -4,7 +4,7 @@
 import os, random, configparser, threading
 from hashlib import blake2b as hash_method
 from pathlib import Path as create_path
-from sys import argv
+from sys import argv, stderr
 
 # Get path to config file
 config_path = os.path.expanduser("~/.haosoft/")
@@ -18,20 +18,28 @@ output_too_big = False
 def ct(string, rgbStr=[0,0,0], rgbSpc=[0,0,0]):
     global colorEnabled
     #Change spacer char here
-    spacerChar = ["[","]"]
+    spacerChar = ["「","」"]
     if (not colorEnabled):
-        return spacerChar[0] + string + spacerchar[1]
+        return spacerChar[0] + string + spacerChar[1]
     #implements colors
     coloredSpcrOp = "\x1b[38;2;{};{};{}m{}\x1b[0m".format(rgbSpc[0],rgbSpc[1],rgbSpc[2],spacerChar[0])
     coloredSpcrCl = "\x1b[38;2;{};{};{}m{}\x1b[0m".format(rgbSpc[0],rgbSpc[1],rgbSpc[2],spacerChar[1])
     coloredStr = "\x1b[38;2;{};{};{}m{}\x1b[0m".format(rgbStr[0],rgbStr[1],rgbStr[2],string)
     return coloredSpcrOp + coloredStr + coloredSpcrCl
+# Function: cterr
+# Print Error string in standard way
+def cterr(string):
+    print(ct("{:^8}".format("Err"), [255,0,0], [192,192,192]) + ct(string, [250,128,114], [192,192,192]), file=stderr)
+# Function: ctwrn
+# Print Warning string in standard way
+def ctwrn(string):
+    print(ct("{:^8}".format("Warn"), [255,215,0], [192,192,192]) + ct(string, [240,230,140], [192,192,192]))
 # Function: print_verbose()
 # Shows extra stuff
-def print_verbose(in_string):
+def ctverb(string):
     global verboseEnabled
     if(verboseEnabled):
-        print(in_string)
+        print(ct("{:^8}".format("Debug"), [60,179,113], [192,192,192]) + ct(string, [102,205,170], [192,192,192]))
 # Function: loadcfg()
 # Loads the config from config_path_file
 def loadcfg():
@@ -64,12 +72,12 @@ def name_gen(file_type):
         file_hash = hash_method()
         while chunk := active_file.read(8192):
             file_hash.update(chunk)
-    print_verbose(file_hash.hexdigest())
+    ctverb("Hash: " + file_hash.hexdigest())
     # Mold the final name
     final_name = outputDir + "BG-" + file_hash.hexdigest()[4:10].upper() + "-" + file_hash.hexdigest()[13:15].upper() + file_type + ".webp"
     final_name = os.path.expanduser(final_name)
     if(os.path.exists(final_name) and not output_too_big):
-        print("Skipping: File already converted: " + final_name)
+        ctwrn("Skipping: File already converted: " + final_name)
         exit(0)
     output_too_big = False
 
@@ -111,7 +119,7 @@ def run_converter(convert_type, crunchActive=False):
     filesize_output = filesize_format[showAsReduction]
     shell_details = ""
     # Construct the shell output here
-    shell_details += ct(convert_type, [0,191,255],[0,255,0])
+    shell_details += ct("{:^8}".format(convert_type), [0,191,255],[0,255,0])
     if (convert_type == "lossy" or crunchActive):
         shell_details += ct(("Q" + str(quality_mod)), [0,191,255],[0,255,0])
     shell_details += ct((argv[1] + " -> " + final_name), [250,235,215],[0,255,0])
@@ -119,7 +127,7 @@ def run_converter(convert_type, crunchActive=False):
     # See if the conversion produced the requested file reduction
     if(int(100 * filesize_reduction) < desired_size_reduction and quality_mod > quality_floor and convert_type in crunchTypes):
         shell_details += "!!! Not reduced by at least " + str(desired_size_reduction) + "%. Q " + str(quality_mod) + "->" + str(quality_mod - quality_steps)
-        print_verbose(shell_details)
+        ctverb(shell_details)
         quality_mod -= quality_steps
         output_too_big = True
         run_converter(convert_type, True)
@@ -174,9 +182,9 @@ if (len(argv) == 2):
        elif inputFileType in animatedImagesArray:
            run_converter("animated")
        else:
-           print("Err: Provided file does not have a valid file type.")
+           cterr("Provided file does not have a valid file type.")
     else:
-        print("Err: File does not exist")
+        cterr("File does not exist")
 else:
     print("Usage: pyconv [file_name]")
 
