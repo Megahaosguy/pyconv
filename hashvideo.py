@@ -5,11 +5,10 @@
 
 from hashlib import blake2b as hash_method
 from sys import argv
-import os
-import argparse
+import os, shutil, argparse
 
 #########################################
-software_version = "Version 1.0.1 © 2021 haosoft"
+software_version = "Version 1.0.2 © 2021 haosoft"
 # verify file existance
 
 def check_file(file):
@@ -35,9 +34,10 @@ def hash_video(file):
 # rename file
 def rename_file(file, file_hash, output):
     new_name = "VID-{}VP9-{}.webm".format(file_hash.hexdigest()[14:21].upper(),file_hash.hexdigest()[30:32].upper())
-    print("{} -> {}".format(file, new_name))
     if output:
-        print("{}{} Final Dir".format(output,new_name))
+        new_name = output + new_name
+    shutil.move(file, new_name)
+    print("✓ {} -> {}".format(file, new_name))
 
 def main():
     # parse input
@@ -56,7 +56,10 @@ def main():
         if not os.path.isdir(arguments.output):
             print("\"{}\" does not exist".format(arguments.output))
             exit(-1)
-        # if arguments.output[-1] == ".":
+        if arguments.output[-2] == "." and arguments.output[-1] == ".":
+            arguments.output = arguments.output[0:-2]
+        elif arguments.output[-1] == ".":
+            arguments.output = arguments.output[0:-1]
     file_hash = hash_video(arguments.File)
     rename_file(arguments.File, file_hash, arguments.output)
     exit(0)
