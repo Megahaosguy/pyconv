@@ -29,7 +29,7 @@ def ct(string, rgbStr=[0,0,0], rgbSpc=[0,0,0]):
 # Function: cterr
 # Print Error string in standard way
 def cterr(string):
-    print(ct("{:^8}".format("Err"), [255,0,0], [192,192,192]) + ct(string, [250,128,114], [192,192,192]), file=stderr)
+    print(ct("{:^8}".format("Error!"), [255,0,0], [192,192,192]) + ct(string, [250,128,114], [192,192,192]), file=stderr)
 # Function: ctwrn
 # Print Warning string in standard way
 def ctwrn(string):
