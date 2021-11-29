@@ -23,23 +23,25 @@ def threadmng(arguments):
     #print(total_number_of_files)
     data_lock = threading.Lock()
     #total_number_of_files = list(range(200))
-    i = 0
+    i = -1
     for j in range(arguments.threads):
         thread_starter[j] = threading.Thread(target=runprogram, args=(arguments,))
         thread_starter[j].start()
-        time.sleep(0.1)
+        time.sleep(0.10)
     # wait until everything is done
-    while i < len(total_number_of_files):
+    while i < len(total_number_of_files)-1:
         time.sleep(0.2)
+    for j in range(arguments.threads):
+        thread_starter[j].join()
     return
 def runprogram(arguments):
     #run converter on each thread parallel, keeping track of i
     global i, total_number_of_files
-    while i < len(total_number_of_files):
+    while i < len(total_number_of_files)-1:
+        i+=1
         #print(f"pyconv -k \"{total_number_of_files[i]}\" --output \"{arguments.output}\" ")
         os.system(f"pyconv -k \"{total_number_of_files[i]}\" --output \"{arguments.output}\" ")
-        i+=1
-        time.sleep(1)
+        time.sleep(0.10)
         
     return
 def parseargs():
