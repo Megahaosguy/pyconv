@@ -22,7 +22,6 @@ def check_file(file):
     if(filetype.lower() != ".webm"):
         print("{} is not a .webm file".format(file))
         exit(-1)
-
 # get hash
 def hash_video(file):
     # read and hash
@@ -31,7 +30,6 @@ def hash_video(file):
         while chunk := file_temp.read(8192):
             file_hash.update(chunk)
         return file_hash
-
 # rename file
 def rename_file(file, file_hash, output):
     new_name = "VID-{}VP9-{}.webm".format(file_hash.hexdigest()[14:21].upper(),file_hash.hexdigest()[30:32].upper())
@@ -39,7 +37,7 @@ def rename_file(file, file_hash, output):
         new_name = output + new_name
     shutil.move(file, new_name)
     print("✓ {} -> {}".format(file, new_name))
-
+# main loop
 def main():
     # parse input
     parser = argparse.ArgumentParser()
@@ -63,8 +61,7 @@ def main():
     rename_file(arguments.File, file_hash, arguments.output)
     exit(0)
 
-
-
-main()
+if __name__ == "__main__":
+    main()
 
 

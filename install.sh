@@ -1,3 +1,3 @@
 #!/bin/sh
-cp ./pyconv.py /usr/bin/pyconv
+cp ./pyconv.py /usr/local/bin/pyconv
 

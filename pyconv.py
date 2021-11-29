@@ -65,15 +65,22 @@ def loadcfg():
 # Check hash and Generate Name
 def name_gen(file_type):
     global final_name, output_too_big, outputDir
-    # Check hash
-    with open(arguments.File, "rb") as active_file:
-        file_hash = hash_method()
-        while chunk := active_file.read(8192):
-            file_hash.update(chunk)
-    ctverb("Hash: " + file_hash.hexdigest())
-    # Mold the final name
-    final_name = outputDir + "BG-" + file_hash.hexdigest()[4:10].upper() + "-" + file_hash.hexdigest()[13:15].upper() + file_type + ".webp"
-    # final_name = os.path.expanduser(final_name)
+    if arguments.name:
+        final_name = arguments.name
+    elif arguments.k:
+        final_name = "{}.webp".format(os.path.splitext(arguments.File)[0])
+        if arguments.output:
+            final_name = outputDir + os.path.split(final_name)[-1]
+            #print(final_name)
+    else:
+        # Check hash
+        with open(arguments.File, "rb") as active_file:
+            file_hash = hash_method()
+            while chunk := active_file.read(8192):
+                file_hash.update(chunk)
+        ctverb("Hash: " + file_hash.hexdigest())
+        # Mold the final name
+        final_name = outputDir + "BG-" + file_hash.hexdigest()[4:10].upper() + "-" + file_hash.hexdigest()[13:15].upper() + file_type + ".webp"
     if(os.path.exists(final_name) and not output_too_big):
         ctwrn("Skipping: File already converted: " + final_name)
         exit(0)
@@ -85,13 +92,16 @@ def run_converter(convert_type, crunchActive=False):
     if(not crunchActive):
         if(convert_type == "lossy"):
             name_gen("LY")
-            cmd = "cwebp -quiet -m 6 -mt -q " + str(quality_mod) + " " + arguments.File + " -o " + final_name
+            # cmd = "cwebp -quiet -m 6 -mt -q " + str(quality_mod) + " \"" + arguments.File + "\" -o " + final_name
+            cmd = f"cwebp -quiet -m 6 -mt -q {str(quality_mod)} \"{arguments.File}\" -o \"{final_name}\""
         if(convert_type == "lossless"):
             name_gen("LL")
-            cmd = "cwebp -quiet -z 9 -mt " + arguments.File + " -o " + final_name
+            # cmd = "cwebp -quiet -z 9 -mt " + arguments.File + " -o " + final_name
+            cmd = f"cwebp -quiet -z 9 -mt \"{arguments.File}\" -o \"{final_name}\""
         if(convert_type == "animated"):
             name_gen("AN")
-            cmd = "gif2webp -quiet -mt -m 6 -q 100 " + arguments.File + " -o " + final_name
+            # cmd = "gif2webp -quiet -mt -m 6 -q 100 " + arguments.File + " -o " + final_name
+            cmd = f"gif2webp -quiet -mt -m 6 -q 100 \"{arguments.File}\" -o \"{final_name}\""
     else:
         if(convert_type == "lossy"):
             name_gen("LY")
@@ -167,7 +177,7 @@ def cfg_startup():
             config.write(config_path_file_tmp)
         loadcfg()
 # Clean directory input, bypass cfg and use this dir
-def check_output():
+def implement_cmd_overrides():
     global outputDir
     if(arguments.output):
         if not os.path.isdir(arguments.output):
@@ -178,6 +188,7 @@ def check_output():
         elif arguments.output[-1] == ".":
             arguments.output = arguments.output[0:-1]
         outputDir = f"{os.path.abspath(arguments.output)}/"
+        #print(f"this should work lol {outputDir}")
 # Makes parser
 def make_parser():
     global arguments
@@ -187,6 +198,8 @@ def make_parser():
     # parser.add_argument("-a", action="store_true")
     # parser.add_argument("-b", action="store_true")
     parser.add_argument("-o", "--output", metavar="OUTPUT_DIRECTORY", action="store", type=str, help="override config directory")
+    parser.add_argument("-n", "--name", metavar="OUTPUT_NAME", action="store", type=str, help="override default output name")
+    parser.add_argument("-k", action="store_true", help="use input name as output")
     parser.version = software_version
     arguments = parser.parse_args()
 # Main loop
@@ -194,7 +207,8 @@ def main():
     global arguments
     make_parser()                     # Check input
     cfg_startup()                     # Load or Make CFG
-    check_output()                    # Make sure output is good
+    implement_cmd_overrides()                    # Make sure output is good
+    #print(arguments)
 
     # Make sure the file is legit and then start the conversion process
     if os.path.isfile(arguments.File):
