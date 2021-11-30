@@ -1,0 +1,7 @@
+{
+    "files.exclude": {
+        "**/*.webp": true,
+        "**/*.bin": true,
+        "**/*.exe": true
+    }
+}
