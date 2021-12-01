@@ -6,53 +6,54 @@ import os, threading, argparse, glob, time
 
 #########################################
 
-def globinput(arguments):
+def find_all_files_to_convert(arguments):
     # Grab all the files that you want into a list
-    types = ["jpeg", "jpg", "png", "gif"]
+    allowed_types = ["jpeg", "jpg", "png", "gif"]
     full_list_of_files = list()
     def globby(type, full_list_of_files):
         full_list_of_files += list(glob.glob(f"{arguments.input}*.{type}"))
         return 
-    for type in types:
+    for type in allowed_types:
         globby(type, full_list_of_files)
     return full_list_of_files
-def threadmng(arguments):
-    thread_starter = [""] * arguments.threads
-    global i, total_number_of_files
-    total_number_of_files = globinput(arguments)
-    #print(total_number_of_files)
-    data_lock = threading.Lock()
-    #total_number_of_files = list(range(200))
-    i = -1
-    for j in range(arguments.threads):
-        thread_starter[j] = threading.Thread(target=runprogram, args=(arguments,))
-        thread_starter[j].start()
+def begin_all_threads(arguments, pyconv_info):
+    global current_file, file_list
+    thread_starter = [""] * arguments.threads # Create list of threads as big as how many threads requested
+    file_list = find_all_files_to_convert(arguments)
+    pyconv_executable = pyconv_info["executable"]
+    pyconv_keepname = pyconv_info["keepname"]
+    current_file = -1
+    for current_thread in range(arguments.threads):
+        thread_starter[current_thread] = threading.Thread(target=runprogram, args=(arguments, pyconv_executable, pyconv_keepname,))
+        thread_starter[current_thread].start()
         time.sleep(0.10)
     # wait until everything is done
-    while i < len(total_number_of_files)-1:
-        time.sleep(0.2)
-    for j in range(arguments.threads):
-        thread_starter[j].join()
+    while current_file < len(file_list)-1:
+        time.sleep(0.1)
+    for current_thread in range(arguments.threads):
+        thread_starter[current_thread].join()
     return
-def runprogram(arguments):
+def runprogram(arguments, pyconv_executable, pyconv_keepname):
     #run converter on each thread parallel, keeping track of i
-    global i, total_number_of_files
-    while i < len(total_number_of_files)-1:
-        i+=1
-        #print(f"pyconv -k \"{total_number_of_files[i]}\" --output \"{arguments.output}\" ")
-        os.system(f"pyconv -k \"{total_number_of_files[i]}\" --output \"{arguments.output}\" ")
+    global current_file, file_list
+    while current_file < len(file_list)-1:
+        current_file+=1
+        os.system(f"{pyconv_executable} {pyconv_keepname} \"{file_list[current_file]}\" --output \"{arguments.output}\" ")
         time.sleep(0.10)
         
     return
-def parseargs():
+def parse_cmd_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", metavar="input_dir", type=str, help="optinal input dir", default="./")
+    parser.add_argument("-i", "--input", metavar="input_dir", type=str, help="optional input dir", default="./")
     parser.add_argument("-o", "--output", metavar="output_dir", action="store", type=str, help="optional output dir", default="./")
     parser.add_argument("-t", "--threads", type=int, default="1", action="store", help="threads to use")
+    parser.add_argument("-k", "--keepname", action="store_true", help="Keep original names")
+    parser.add_argument("-l", "--local", action="store_true", help="Use local copy of pyconv")
     parser.add_argument("-v", "--version", action="version")
     parser.version = "1.0.5"
     return parser.parse_args()
 def check_and_clean_argumennts(arguments):
+    pyconv_info = {"executable": "pyconv", "keepname": ""}
     if arguments.input:
         if not os.path.isdir(arguments.input):
             print("Input dir not found")
@@ -62,13 +63,19 @@ def check_and_clean_argumennts(arguments):
         if not os.path.isdir(arguments.output):
             print("Output dir not found")
         else: arguments.output = f"{os.path.abspath(arguments.output)}/"
+
+    if arguments.keepname:
+        pyconv_info["keepname"] = "-k"
+
+    if arguments.local:
+        pyconv_info["executable"] = "./pyconv.py"
+
+    return pyconv_info
 def main():
-    arguments = parseargs()
-    check_and_clean_argumennts(arguments)
-    #print(arguments)
-    #print("starting")
+    arguments = parse_cmd_arguments()
+    pyconv_info = check_and_clean_argumennts(arguments)
     start_time = time.time()       
-    threadmng(arguments)
+    begin_all_threads(arguments, pyconv_info)
     print(f"done in {time.time() - start_time:1.4} seconds")
     exit(0)
 if __name__ == "__main__":

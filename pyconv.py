@@ -116,7 +116,7 @@ def run_converter(convert_type, crunchActive=False, start_time=0):
     # Calc time
     if not crunchActive:
         start_time = time.time()
-        print("Working...", end="\r")
+    print("Working...", end="\r")
     os.system(cmd)
     # Get file sizes of used files
     filesize_input = os.path.getsize(arguments.File)
@@ -136,16 +136,19 @@ def run_converter(convert_type, crunchActive=False, start_time=0):
         output_too_big = True
         run_converter(convert_type, True, start_time)
     shell_details = create_successful_shell_output(convert_type, crunchActive, start_time, filesize_output)
-    print("✔️" + shell_details)
+    print(shell_details)
     exit(0)
 
 def create_successful_shell_output(convert_type, crunchActive, start_time, filesize_output):
-    shell_details = ""
-    # Construct the shell output here
+    shell_details = "✔️"
+    # Input mode (Lossy, Lossless, Animated)
     shell_details += ct("{:^8}".format(convert_type), [0,191,255],[0,255,0])
+    # QXX Used
     if (convert_type == "lossy" or crunchActive):
         shell_details += ct(("Q" + str(quality_mod)), [0,191,255],[0,255,0])
+    # i -> o
     shell_details += ct((arguments.File + " -> " + final_name), [250,235,215],[0,255,0])
+    # Filesize Reduction %
     shell_details += ct(filesize_output, [245,245,245],[0,255,0])
     # Timer
     shell_details += ct(f"祥{time.time()-start_time:.2f}s", [181,214,255],[0,255,0])
