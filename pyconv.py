@@ -8,7 +8,7 @@ from pathlib import Path as create_path
 from sys import stderr
 
 ###########################################################
-software_version = "Version 1.1.0 © 2021 haosoft"                 
+software_version = "Version 1.1.2 © 2021 haosoft"                 
 ###########################################################
 
 # Function: ct(string, rgbSpc[], rgbStr[]) returns string
@@ -92,23 +92,20 @@ def run_converter(convert_type, crunchActive=False, start_time=0):
     if(not crunchActive):
         if(convert_type == "lossy"):
             name_gen("LY")
-            # cmd = "cwebp -quiet -m 6 -mt -q " + str(quality_mod) + " \"" + arguments.File + "\" -o " + final_name
             cmd = f"cwebp -quiet -m 6 -mt -q {str(quality_mod)} \"{arguments.File}\" -o \"{final_name}\""
         if(convert_type == "lossless"):
             name_gen("LL")
-            # cmd = "cwebp -quiet -z 9 -mt " + arguments.File + " -o " + final_name
             cmd = f"cwebp -quiet -z 9 -mt \"{arguments.File}\" -o \"{final_name}\""
         if(convert_type == "animated"):
             name_gen("AN")
-            # cmd = "gif2webp -quiet -mt -m 6 -q 100 " + arguments.File + " -o " + final_name
-            cmd = f"gif2webp -quiet -mt -m 6 -q 100 \"{arguments.File}\" -o \"{final_name}\""
+            cmd = f"gif2webp -quiet -mt -lossy -m 6 -q {str(quality_mod)} \"{arguments.File}\" -o \"{final_name}\""
     else:
         if(convert_type == "lossy"):
             name_gen("LY")
-            cmd = "cwebp -quiet -m 6 -mt -q " + str(quality_mod) + " " + arguments.File + " -o " + final_name
+            cmd = f"cwebp -quiet -m 6 -mt -q {str(quality_mod)} \"{arguments.File}\" -o \"{final_name}\""
         if(convert_type == "lossless"):
             name_gen("LL")
-            cmd = "cwebp -quiet -m 6 -mt -q " + str(quality_mod + quality_steps) + " " + arguments.File + " -o " + final_name
+            cmd = f"cwebp -quiet -m 6 -mt -q {str(quality_mod + quality_steps)} \"{arguments.File}\" -o \"{final_name}\""
         if(convert_type == "animated"):
             name_gen("AN")
             cmd = "gif2webp -quiet -mt -lossy -m 6 -q " + str(quality_mod + quality_steps) + " " + arguments.File + " -o " + final_name

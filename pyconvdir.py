@@ -5,6 +5,8 @@
 import os, threading, argparse, glob, time
 
 #########################################
+software_version = "Version 1.0.0 © 2021 haosoft"
+#########################################
 
 def find_all_files_to_convert(arguments):
     # Grab all the files that you want into a list
@@ -50,7 +52,7 @@ def parse_cmd_arguments():
     parser.add_argument("-k", "--keepname", action="store_true", help="Keep original names")
     parser.add_argument("-l", "--local", action="store_true", help="Use local copy of pyconv")
     parser.add_argument("-v", "--version", action="version")
-    parser.version = "1.0.5"
+    parser.version = software_version
     return parser.parse_args()
 def check_and_clean_argumennts(arguments):
     pyconv_info = {"executable": "pyconv", "keepname": ""}
