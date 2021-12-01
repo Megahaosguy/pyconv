@@ -8,7 +8,7 @@ import os, threading, argparse, glob, time
 
 def globinput(arguments):
     # Grab all the files that you want into a list
-    types = ["jpeg", "jpg", "png"]
+    types = ["jpeg", "jpg", "png", "gif"]
     full_list_of_files = list()
     def globby(type, full_list_of_files):
         full_list_of_files += list(glob.glob(f"{arguments.input}*.{type}"))

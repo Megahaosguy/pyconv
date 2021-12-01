@@ -2,7 +2,7 @@
 # Convert image files to WEBP with configurable compression
 ###########################################################
 
-import os, configparser, argparse
+import os, configparser, argparse, time
 from hashlib import blake2b as hash_method
 from pathlib import Path as create_path
 from sys import stderr
@@ -86,7 +86,7 @@ def name_gen(file_type):
         exit(0)
     output_too_big = False
 # Run the convert commands as needed
-def run_converter(convert_type, crunchActive=False):
+def run_converter(convert_type, crunchActive=False, start_time=0):
     global final_name, quality_mod, showAsReduction, quality_floor, quality_mod, quality_steps, desired_size_reduction, output_too_big, displayOneLine, crunchTypes
     filesize_format = []
     if(not crunchActive):
@@ -113,6 +113,10 @@ def run_converter(convert_type, crunchActive=False):
             name_gen("AN")
             cmd = "gif2webp -quiet -mt -lossy -m 6 -q " + str(quality_mod + quality_steps) + " " + arguments.File + " -o " + final_name
 
+    # Calc time
+    if not crunchActive:
+        start_time = time.time()
+        print("Working...", end="\r")
     os.system(cmd)
     # Get file sizes of used files
     filesize_input = os.path.getsize(arguments.File)
@@ -124,6 +128,18 @@ def run_converter(convert_type, crunchActive=False):
     filesize_format.append("Reduced by {:2.2%}".format(filesize_reduction))
     # Change this to change output style
     filesize_output = filesize_format[showAsReduction]
+    # See if the conversion produced the requested file reduction
+    if(int(100 * filesize_reduction) < desired_size_reduction and quality_mod > quality_floor and convert_type in crunchTypes):
+        #shell_details += "!!! Not reduced by at least " + str(desired_size_reduction) + "%. Q " + str(quality_mod) + "->" + str(quality_mod - quality_steps)
+        #ctverb(shell_details)
+        quality_mod -= quality_steps
+        output_too_big = True
+        run_converter(convert_type, True, start_time)
+    shell_details = create_successful_shell_output(convert_type, crunchActive, start_time, filesize_output)
+    print("✔️" + shell_details)
+    exit(0)
+
+def create_successful_shell_output(convert_type, crunchActive, start_time, filesize_output):
     shell_details = ""
     # Construct the shell output here
     shell_details += ct("{:^8}".format(convert_type), [0,191,255],[0,255,0])
@@ -131,15 +147,9 @@ def run_converter(convert_type, crunchActive=False):
         shell_details += ct(("Q" + str(quality_mod)), [0,191,255],[0,255,0])
     shell_details += ct((arguments.File + " -> " + final_name), [250,235,215],[0,255,0])
     shell_details += ct(filesize_output, [245,245,245],[0,255,0])
-    # See if the conversion produced the requested file reduction
-    if(int(100 * filesize_reduction) < desired_size_reduction and quality_mod > quality_floor and convert_type in crunchTypes):
-        shell_details += "!!! Not reduced by at least " + str(desired_size_reduction) + "%. Q " + str(quality_mod) + "->" + str(quality_mod - quality_steps)
-        ctverb(shell_details)
-        quality_mod -= quality_steps
-        output_too_big = True
-        run_converter(convert_type, True)
-    print("✔️" + shell_details)
-    exit(0)
+    # Timer
+    shell_details += ct(f"祥{time.time()-start_time:.2f}s", [181,214,255],[0,255,0])
+    return shell_details
 # Check config
 def cfg_startup():
     global config_path, config_path_file, config, output_too_big
