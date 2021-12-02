@@ -92,7 +92,7 @@ def run_converter(convert_type, crunchActive=False, start_time=0):
     if(not crunchActive):
         if(convert_type == "lossy"):
             name_gen("LY")
-            cmd = f"cwebp -quiet -m 6 -mt -q {str(quality_mod)} \"{arguments.File}\" -o \"{final_name}\""
+            cmd = f"cwebp -quiet -sharp_yuv -m 6 -mt -q {str(quality_mod)} \"{arguments.File}\" -o \"{final_name}\""
         if(convert_type == "lossless"):
             name_gen("LL")
             cmd = f"cwebp -quiet -z 9 -mt \"{arguments.File}\" -o \"{final_name}\""
@@ -102,10 +102,10 @@ def run_converter(convert_type, crunchActive=False, start_time=0):
     else:
         if(convert_type == "lossy"):
             name_gen("LY")
-            cmd = f"cwebp -quiet -m 6 -mt -q {str(quality_mod)} \"{arguments.File}\" -o \"{final_name}\""
+            cmd = f"cwebp -quiet -sharp_yuv -m 6 -mt -q {str(quality_mod)} \"{arguments.File}\" -o \"{final_name}\""
         if(convert_type == "lossless"):
             name_gen("LL")
-            cmd = f"cwebp -quiet -m 6 -mt -q {str(quality_mod + quality_steps)} \"{arguments.File}\" -o \"{final_name}\""
+            cmd = f"cwebp -quiet -sharp_yuv -m 6 -mt -q {str(quality_mod + quality_steps)} \"{arguments.File}\" -o \"{final_name}\""
         if(convert_type == "animated"):
             name_gen("AN")
             cmd = "gif2webp -quiet -mt -lossy -m 6 -q " + str(quality_mod + quality_steps) + " " + arguments.File + " -o " + final_name
@@ -142,7 +142,11 @@ def create_successful_shell_output(convert_type, crunchActive, start_time, files
     shell_details += ct("{:^8}".format(convert_type), [0,191,255],[0,255,0])
     # QXX Used
     if (convert_type == "lossy" or crunchActive):
-        shell_details += ct(("Q" + str(quality_mod)), [0,191,255],[0,255,0])
+        if convert_type != "lossy":
+            qVal = str(quality_mod + quality_steps)
+        else:
+            qVal = str(quality_mod)
+        shell_details += ct(("Q" + qVal), [0,191,255],[0,255,0])
     # i -> o
     shell_details += ct((arguments.File + " -> " + final_name), [250,235,215],[0,255,0])
     # Filesize Reduction %
